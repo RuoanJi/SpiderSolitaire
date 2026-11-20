@@ -15,3 +15,6 @@ desktop.ini
 # local environment
 .env
 .env.*
+
+# files the Claude desktop app saves from chat
+Claude outputs/

@@ -454,13 +454,16 @@ export class App {
     const hints = g.hints();
     if (hints.length === 0) {
       if (g.checkDeal() === 'ok') {
+        // Suggest dealing: spotlight the stock.
+        this.sfx('hint');
         this.toast('No useful moves. Deal a new row.');
-        this.stockSlot.classList.add('hint-dst');
-        g.board.stock.slice(-COLUMNS).forEach((id) => this.cardEls[id].classList.add('hint-src'));
-        this.hintTimer = window.setTimeout(() => this.clearHint(), 1600);
+        this.showHint(g.board.stock.slice(-1), [], null);
+        document.querySelectorAll('[data-act="deal"]').forEach((b) => b.classList.add('hint-btn'));
       } else if (g.legalMoves().length) {
+        this.sfx('no-hint');
         this.toast('There are no more useful moves.');
       } else {
+        this.sfx('no-hint');
         this.noMovesDialog();
       }
       return;
@@ -468,15 +471,70 @@ export class App {
     const h = hints[this.hintIdx % hints.length];
     this.hintIdx++;
     const t = g.board.tableau;
-    for (let i = h.index; i < t[h.from].length; i++) this.cardEls[t[h.from][i]].classList.add('hint-src');
-    if (t[h.to].length) this.cardEls[t[h.to][t[h.to].length - 1]].classList.add('hint-dst');
-    else this.slotEls[h.to].classList.add('hint-dst');
-    this.hintTimer = window.setTimeout(() => this.clearHint(), 1600);
+    const src = t[h.from].slice(h.index);
+    const dst = t[h.to].length ? [t[h.to][t[h.to].length - 1]] : [];
+    this.sfx('hint');
+    this.showHint(src, dst, dst.length ? null : this.slotEls[h.to], h.to);
+  }
+
+  /**
+   * Show a hint: the cards to move bob and glow gold, the destination glows green,
+   * and see-through copies of the cards slide to where they go.
+   */
+  private showHint(src: number[], dst: number[], dstSlot: HTMLElement | null, toCol = -1) {
+    src.forEach((id, i) => {
+      const el = this.cardEls[id];
+      el.classList.add('hint-src');
+      el.style.zIndex = String(950 + i);
+    });
+    dst.forEach((id) => {
+      const el = this.cardEls[id];
+      el.classList.add('hint-dst');
+      el.style.zIndex = '940';
+    });
+    if (dstSlot) dstSlot.classList.add('hint-dst');
+    this.announce('Hint shown.');
+
+    // Ghost of the move
+    if (toCol >= 0 && this.settings.animations && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const m = this.m;
+      const t = this.game.board.tableau[toCol];
+      const from = this.pos[src[0]];
+      const tx = columnX(m, toCol);
+      const ty = t.length ? this.pos[t[t.length - 1]].y + m.upGap : m.tableauTop;
+      const ghost = document.createElement('div');
+      ghost.className = 'hint-ghost';
+      src.forEach((id) => {
+        const c = this.cardEls[id].cloneNode(true) as HTMLElement;
+        c.className = 'card';
+        c.removeAttribute('style');
+        c.removeAttribute('aria-label');
+        c.style.transform = `translate(0px, ${this.pos[id].y - from.y}px)`;
+        ghost.appendChild(c);
+      });
+      this.boardEl.appendChild(ghost);
+      ghost.animate(
+        [
+          { transform: `translate(${from.x}px, ${from.y}px)`, opacity: 0 },
+          { transform: `translate(${from.x}px, ${from.y}px)`, opacity: 0.85, offset: 0.15 },
+          { transform: `translate(${tx}px, ${ty}px)`, opacity: 0.85, offset: 0.7 },
+          { transform: `translate(${tx}px, ${ty}px)`, opacity: 0 },
+        ],
+        { duration: 1100, delay: 200, iterations: 2, easing: 'ease-in-out', fill: 'both' },
+      );
+    }
+    this.hintTimer = window.setTimeout(() => this.clearHint(), 2800);
   }
 
   private clearHint() {
     clearTimeout(this.hintTimer);
-    this.boardEl.querySelectorAll('.hint-src, .hint-dst').forEach((el) => el.classList.remove('hint-src', 'hint-dst'));
+    document.querySelectorAll('.hint-btn').forEach((b) => b.classList.remove('hint-btn'));
+    this.boardEl.querySelectorAll('.hint-ghost').forEach((el) => el.remove());
+    this.boardEl.querySelectorAll<HTMLElement>('.hint-src, .hint-dst').forEach((el) => {
+      el.classList.remove('hint-src', 'hint-dst');
+      const id = el.dataset.id;
+      if (id !== undefined && !this.elevateTimers.has(Number(id))) el.style.zIndex = String(this.pos[Number(id)].z);
+    });
   }
 
   // =========================================================== pointer input
@@ -529,6 +587,7 @@ export class App {
   }
 
   private onDown(e: PointerEvent) {
+    this.clearHint();
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     if (this.press) return; // a second finger never starts a new interaction
     if (this.twoFinger) return;
@@ -732,6 +791,7 @@ export class App {
 
   private onKey(e: KeyboardEvent) {
     if (dialogOpen()) return;
+    if (!['Shift', 'Control', 'Alt', 'Meta', 'h', 'H'].includes(e.key)) this.clearHint();
     if (this.popoverOpen()) return this.popoverKey(e);
     const tag = (e.target as HTMLElement).tagName;
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;

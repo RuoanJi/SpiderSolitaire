@@ -1,5 +1,5 @@
 // Service worker: makes the game load instantly and work offline.
-// e0201b8a1890 is replaced at build time with a hash of the built files, so every
+// 29658e2e550b is replaced at build time with a hash of the built files, so every
 // build produces a new worker; the page then offers "New version available".
 const VERSION = '__VERSION__';
 const CACHE = `spider-${VERSION}`;

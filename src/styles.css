@@ -501,7 +501,6 @@ body.touch-ui #app {
   }
 }
 .slot.drop-ok,
-.slot.hint-dst,
 .slot.kb-focus {
   border: 2px solid #ffd84a;
   background: rgba(255, 216, 74, 0.2);
@@ -768,9 +767,6 @@ body.back-purple .back,
 }
 
 /* highlights */
-.card.hint-src .front,
-.card.hint-src .back,
-.card.hint-dst .front,
 .card.drop-ok .front,
 .card.kb-focus .front,
 .card.picked .front {
@@ -778,11 +774,96 @@ body.back-purple .back,
     inset 0 0 0 0.25em #ffd84a,
     0 0 0.6em rgba(255, 216, 74, 0.8);
 }
-.card.hint-src .front,
-.card.hint-src .back {
-  box-shadow:
-    inset 0 0 0 0.25em #4fb3ff,
-    0 0 0.7em rgba(79, 179, 255, 0.9);
+
+/* ---- hints: make the cards themselves impossible to miss ---- */
+/* cards to move: bob up and down, gold tint, thick gold outline, pulsing glow */
+.card.hint-src {
+  animation: hint-bob 0.6s ease-in-out infinite alternate;
+}
+@keyframes hint-bob {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: 0 calc(var(--ch) * -0.07);
+  }
+}
+.card.hint-src .face {
+  outline: max(4px, 0.45em) solid #ffc400;
+  outline-offset: max(1px, 0.1em);
+  animation: hint-pulse-gold 0.6s ease-in-out infinite alternate;
+}
+.card.hint-src .front::after,
+.card.hint-dst .front::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.card.hint-src .front::after {
+  background: rgba(255, 196, 0, 0.3);
+}
+/* destination: green tint, thick green outline, pulsing */
+.card.hint-dst .face,
+.slot.hint-dst {
+  outline: max(4px, 0.45em) solid #22d34a;
+  outline-offset: max(1px, 0.1em);
+  animation: hint-pulse-green 0.6s ease-in-out infinite alternate;
+}
+.card.hint-dst .front::after {
+  background: rgba(34, 211, 74, 0.28);
+}
+.slot.hint-dst {
+  z-index: 940;
+  border-radius: calc(var(--cw) * 0.07);
+  background: rgba(34, 211, 74, 0.3);
+  outline-width: 4px;
+}
+@keyframes hint-pulse-gold {
+  from {
+    box-shadow: 0 0 8px 3px rgba(255, 196, 0, 0.8);
+  }
+  to {
+    box-shadow: 0 0 28px 12px rgba(255, 196, 0, 1);
+  }
+}
+@keyframes hint-pulse-green {
+  from {
+    box-shadow: 0 0 8px 3px rgba(34, 211, 74, 0.75);
+  }
+  to {
+    box-shadow: 0 0 28px 12px rgba(34, 211, 74, 1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card.hint-src,
+  .card.hint-src .face,
+  .card.hint-dst .face,
+  .slot.hint-dst {
+    animation: none;
+  }
+}
+/* "deal a new row": pulse the Deal button too */
+.dbtn.hint-btn {
+  background: rgba(255, 210, 63, 0.25);
+  box-shadow: 0 0 0 2px #ffd23f;
+  animation: hint-pulse-gold 0.8s ease-in-out infinite alternate;
+}
+/* see-through copy of the run sliding to its destination */
+.hint-ghost {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 980;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+.hint-ghost .card {
+  transition: none;
+}
+.hint-ghost .face {
+  outline: max(2px, 0.25em) solid #ffd23f;
 }
 .card.kb-focus .front {
   box-shadow:

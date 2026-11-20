@@ -4,7 +4,7 @@
  * riffle when dealing, a cascade + chime when a run completes, and a fanfare
  * with firework pops on a win. No audio files are used.
  */
-export type Sfx = 'pick' | 'drop' | 'flip' | 'deal' | 'deal-all' | 'complete' | 'win' | 'pop' | 'undo' | 'error';
+export type Sfx = 'pick' | 'drop' | 'flip' | 'deal' | 'deal-all' | 'complete' | 'win' | 'pop' | 'undo' | 'error' | 'hint' | 'no-hint';
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
@@ -209,6 +209,18 @@ export function render(sfx: Sfx, a: BaseAudioContext, out: AudioNode, t: number)
       burst(a, out, t, { freq: 900, type: 'lowpass', q: 0.5, dur: 0.35, gain: 0.35 });
       for (let i = 0; i < 6; i++)
         burst(a, out, t + 0.08 + Math.random() * 0.4, { freq: rnd(5000, 0.3), q: 2, dur: 0.012, gain: 0.08 + Math.random() * 0.08 });
+      break;
+    case 'hint':
+      // a light, rising "here's a move" chime
+      bell(a, out, t, 880, 0.35, 0.11);
+      bell(a, out, t + 0.07, 1318.5, 0.5, 0.11);
+      bell(a, out, t + 0.14, 1760, 0.6, 0.07);
+      break;
+    case 'no-hint':
+      // a soft, falling "nothing to suggest" tone
+      bell(a, out, t, 523.25, 0.3, 0.12);
+      bell(a, out, t + 0.12, 392, 0.5, 0.12);
+      knock(a, out, t + 0.12, 150, 0.12, 0.12);
       break;
     case 'error':
       // soft muted knock (not a system "ding")

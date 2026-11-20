@@ -4,6 +4,8 @@ import { randomSeed } from './engine/rng';
 import { play, Sfx } from './services/audio';
 import * as store from './services/storage';
 import { Settings } from './services/storage';
+import { applyUpdate, initPWA, isStandalone, promptInstall } from './services/pwa';
+import { pushLayer } from './ui/backstack';
 import { SPRITE, frontHTML } from './ui/cardface';
 import { dialogOpen, showDialog } from './ui/dialogs';
 import { fireworks } from './ui/fireworks';
@@ -56,6 +58,7 @@ export class App {
     this.applyAppearance();
     this.bindInput();
     this.bindChrome();
+    this.bindPWA();
     this.start();
     setInterval(() => this.tick(), 1000);
   }
@@ -862,6 +865,8 @@ export class App {
         return this.helpDialog();
       case 'about':
         return this.aboutDialog();
+      case 'install':
+        return this.install();
       case 'more':
         return this.touchUI ? this.moreSheet() : this.togglePopover();
     }
@@ -871,11 +876,18 @@ export class App {
     return !$('#more-pop').hidden;
   }
 
+  private popLayer: (() => void) | null = null;
+
   private togglePopover(open = !this.popoverOpen()) {
     const pop = $('#more-pop');
     const btn = $('#more-btn');
     if (open === this.popoverOpen()) return;
     pop.hidden = !open;
+    if (open) this.popLayer = pushLayer(() => this.togglePopover(false));
+    else {
+      this.popLayer?.();
+      this.popLayer = null;
+    }
     btn.setAttribute('aria-expanded', String(open));
     btn.classList.toggle('active', open);
     if (open) {
@@ -887,7 +899,7 @@ export class App {
   }
 
   private popoverKey(e: KeyboardEvent) {
-    const items = Array.from($('#more-pop').querySelectorAll<HTMLElement>('button'));
+    const items = Array.from($('#more-pop').querySelectorAll<HTMLElement>('button:not([hidden])'));
     const i = items.indexOf(document.activeElement as HTMLElement);
     if (e.key === 'Escape') {
       e.preventDefault();
@@ -903,6 +915,31 @@ export class App {
   }
 
   /** Phone/tablet: the same menu as a bottom sheet. */
+  // =========================================================== installable app (PWA)
+
+  private bindPWA() {
+    const bar = $('#update-bar');
+    initPWA({
+      onInstallable: (available) => {
+        $('#install-item').hidden = !available || isStandalone();
+      },
+      onUpdateReady: () => {
+        bar.hidden = false;
+      },
+      onInstalled: () => this.toast('Spider Solitaire is installed. Open it from your home screen.'),
+    });
+    $('#update-btn').addEventListener('click', () => {
+      this.save();
+      applyUpdate(); // the page reloads into the new version; the game in progress is restored
+    });
+    $('#update-dismiss').addEventListener('click', () => (bar.hidden = true));
+  }
+
+  private async install() {
+    $('#install-item').hidden = true;
+    await promptInstall();
+  }
+
   private moreSheet() {
     const body = document.createElement('div');
     body.className = 'sheet';

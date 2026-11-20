@@ -1,5 +1,6 @@
 import { DEFAULT_RULES, Rules } from '../engine/cards';
 import type { SavedGame } from '../engine/game';
+import { isStandalone } from './pwa';
 
 const KEY_GAME = 'spider.game.v1';
 const KEY_SETTINGS = 'spider.settings.v1';
@@ -46,7 +47,7 @@ export function defaultSettings(touch: boolean): Settings {
   return {
     rules: { ...DEFAULT_RULES },
     animations: true,
-    sounds: !touch,
+    sounds: !touch || isStandalone(), // on for desktop and the installed app
     tips: true,
     autoContinue: true,
     saveOnExit: true,

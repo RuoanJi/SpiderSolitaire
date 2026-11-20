@@ -1,3 +1,5 @@
+import { pushLayer } from './backstack';
+
 export interface DialogButton {
   label: string;
   primary?: boolean;
@@ -16,7 +18,7 @@ export interface DialogOptions {
 let openCount = 0;
 export const dialogOpen = () => openCount > 0;
 
-/** Windows 7 (Aero) style modal window. Returns a function that closes it. */
+/** Modal dialog (a bottom sheet on touch devices). Returns a function that closes it. */
 export function showDialog(opts: DialogOptions): () => void {
   const overlay = document.createElement('div');
   overlay.className = 'dlg-overlay';
@@ -33,10 +35,12 @@ export function showDialog(opts: DialogOptions): () => void {
   const prevFocus = document.activeElement as HTMLElement | null;
 
   let closed = false;
+  let removeLayer = () => {};
   const close = () => {
     if (closed) return;
     closed = true;
     openCount--;
+    removeLayer();
     overlay.remove();
     document.removeEventListener('keydown', onKey, true);
     prevFocus?.focus?.();
@@ -89,6 +93,7 @@ export function showDialog(opts: DialogOptions): () => void {
   overlay.appendChild(win);
   document.body.appendChild(overlay);
   openCount++;
+  removeLayer = pushLayer(close);
   document.addEventListener('keydown', onKey, true);
   (primary ?? (win.querySelector('.dlg-buttons button, .dlg-body button, .dlg-x') as HTMLElement | null))?.focus();
   return close;

@@ -5,10 +5,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
     <meta name="theme-color" content="#0f3d14" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
     <title>Spider Solitaire</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='6' y='4' width='40' height='56' rx='6' fill='%23fff' stroke='%23333' stroke-width='3'/%3E%3Crect x='18' y='8' width='40' height='52' rx='6' fill='%232a6fd6' stroke='%23123' stroke-width='3'/%3E%3C/svg%3E" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Spider" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <!--STYLE-->
   </head>
   <body>
@@ -26,6 +29,7 @@
       <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.9 1.2-1.8-.5-1-.1-2.2 1.1-2.2H17a4 4 0 0 0 4-4c0-5.5-4-10-9-10z" /><circle cx="7.5" cy="11" r="1.3" class="fill" /><circle cx="10.5" cy="7" r="1.3" class="fill" /><circle cx="15" cy="7.5" r="1.3" class="fill" /></symbol>
       <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6" /><circle cx="12" cy="17" r=".9" class="fill" /></symbol>
       <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 11v6" /><circle cx="12" cy="7.8" r=".9" class="fill" /></symbol>
+      <symbol id="i-install" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5" /><path d="M5 20h14" /></symbol>
       <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></symbol>
     </svg>
 
@@ -39,6 +43,7 @@
         <button role="menuitem" data-act="options"><svg><use href="#i-options" /></svg><span>Options</span><kbd>F5</kbd></button>
         <div class="sep"></div>
         <button role="menuitem" data-act="help"><svg><use href="#i-help" /></svg><span>How to play</span><kbd>F1</kbd></button>
+        <button role="menuitem" data-act="install" id="install-item" hidden><svg><use href="#i-install" /></svg><span>Install app</span><kbd></kbd></button>
         <button role="menuitem" data-act="about"><svg><use href="#i-info" /></svg><span>About</span><kbd></kbd></button>
       </div>
 
@@ -67,6 +72,11 @@
       </footer>
 
       <div id="toast" class="toast" role="status"></div>
+      <div id="update-bar" class="update-bar" role="status" hidden>
+        <span>A new version is available.</span>
+        <button class="btn primary" id="update-btn">Refresh</button>
+        <button class="update-x" id="update-dismiss" aria-label="Later"><svg><use href="#i-close" /></svg></button>
+      </div>
       <div id="live" class="sr-only" aria-live="polite"></div>
     </div>
     <!--SCRIPT-->

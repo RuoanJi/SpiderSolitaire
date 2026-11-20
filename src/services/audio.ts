@@ -110,11 +110,51 @@ function tick(a: BaseAudioContext, out: AudioNode, t: number, gain = 0.5) {
   burst(a, out, t, { freq: rnd(4200), q: 0.9, dur: 0.018, gain, hp: 1800 });
 }
 
-function snap(a: BaseAudioContext, out: AudioNode, t: number, gain = 1) {
-  // card landing on felt: crisp slap + small low knock
-  burst(a, out, t, { freq: rnd(2300), q: 0.8, dur: 0.045, gain: 0.9 * gain, sweepTo: 1300 });
-  burst(a, out, t, { freq: rnd(6000), q: 0.7, dur: 0.012, gain: 0.35 * gain, hp: 3500 });
-  knock(a, out, t, rnd(160, 0.08), 0.05, 0.25 * gain);
+/** Metallic shimmer: a couple of high partials that ring briefly. */
+function ring(a: BaseAudioContext, out: AudioNode, t: number, gain: number) {
+  for (const [f, amp, d] of [
+    [rnd(6300, 0.04), 1, 0.05],
+    [rnd(9100, 0.04), 0.6, 0.035],
+    [rnd(11700, 0.04), 0.3, 0.025],
+  ] as const) {
+    const o = a.createOscillator();
+    o.type = 'sine';
+    o.frequency.value = f;
+    const g = a.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain * amp, t + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g).connect(out);
+    o.start(t);
+    o.stop(t + d + 0.02);
+  }
+}
+
+/**
+ * The move sound: a crisp "snip", like scissors closing through hair.
+ * A rapid run of tiny grainy bursts that rise in pitch as the blades close,
+ * a faint metallic ring, and a small click at the end.
+ */
+function snip(a: BaseAudioContext, out: AudioNode, t: number, gain = 1) {
+  const len = rnd(0.07, 0.15);
+  const grains = 22 + Math.floor(Math.random() * 6);
+  for (let i = 0; i < grains; i++) {
+    // irregular spacing, slightly denser toward the end as the blades close
+    const p = Math.pow(Math.random(), 0.8);
+    const at = t + p * len;
+    burst(a, out, at, {
+      freq: rnd(3200 + p * 3600, 0.15),
+      q: 2.2,
+      dur: rnd(0.006, 0.3),
+      gain: gain * (0.12 + 0.26 * p) * (0.5 + Math.random() * 0.9),
+      hp: 1800,
+    });
+  }
+  // soft continuous "shh" underneath, so the grains read as one cut
+  burst(a, out, t, { freq: 4800, q: 0.8, dur: len + 0.01, gain: 0.08 * gain, sweepTo: 7000, hp: 2500 });
+  const end = t + len;
+  ring(a, out, end - 0.004, 0.05 * gain);
+  burst(a, out, end, { freq: rnd(7500), q: 1, dur: 0.008, gain: 0.45 * gain, hp: 4000 });
 }
 
 function flick(a: BaseAudioContext, out: AudioNode, t: number, gain = 0.7) {
@@ -129,7 +169,7 @@ export function render(sfx: Sfx, a: BaseAudioContext, out: AudioNode, t: number)
       tick(a, out, t, 0.55);
       break;
     case 'drop':
-      snap(a, out, t);
+      snip(a, out, t, 1.8);
       break;
     case 'flip':
       tick(a, out, t, 0.4);
@@ -146,7 +186,7 @@ export function render(sfx: Sfx, a: BaseAudioContext, out: AudioNode, t: number)
     case 'undo':
       // card pulled back: upward swish + soft landing
       burst(a, out, t, { freq: 900, q: 1.3, dur: 0.09, gain: 0.35, sweepTo: 3800 });
-      snap(a, out, t + 0.09, 0.55);
+      snip(a, out, t + 0.08, 1.1);
       break;
     case 'complete': {
       // thirteen cards ruffle onto the foundation, then a bright two-note chime

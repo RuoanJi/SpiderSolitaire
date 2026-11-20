@@ -1,8 +1,10 @@
-// Builds a single self-contained dist/index.html (works from file:// or any static host).
-//   node build.mjs          -> dist/index.html
+// Builds the game into a single self-contained index.html at the project root,
+// so GitHub Pages (or any static host, or a double-click from file://) serves it as-is.
+// The page template lives in src/index.html.
+//   node build.mjs          -> index.html
 //   node build.mjs --serve  -> dev server on http://localhost:5173 (rebuilds on every page load)
 import * as esbuild from 'esbuild';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 
 const serve = process.argv.includes('--serve');
@@ -15,13 +17,14 @@ async function bundle(dev) {
     format: 'iife',
     target: ['es2020', 'safari15'],
     write: false,
-    outdir: 'dist',
+    outdir: 'build-tmp', // in-memory only (write: false)
     logLevel: 'warning',
   });
   const out = (ext) => result.outputFiles.find((f) => f.path.endsWith(ext))?.text ?? '';
   const js = out('.js').replace(/<\/script/gi, '<\\/script');
   const css = out('.css');
-  return readFileSync('index.html', 'utf8')
+  return readFileSync('src/index.html', 'utf8')
+    .replace(/<!-- Page template\.[^>]*-->\n?/, '<!-- Built by build.mjs from src/index.html — do not edit by hand. -->\n')
     .replace('<!--STYLE-->', () => `<style>${css}</style>`)
     .replace('<!--SCRIPT-->', () => `<script>${js}</script>`);
 }
@@ -43,8 +46,7 @@ if (serve) {
     }
   }).listen(port, () => console.log(`Spider Solitaire dev server: http://localhost:${port}`));
 } else {
-  mkdirSync('dist', { recursive: true });
   const html = await bundle(false);
-  writeFileSync('dist/index.html', html);
-  console.log(`dist/index.html (${(html.length / 1024).toFixed(1)} KB)`);
+  writeFileSync('index.html', html);
+  console.log(`index.html (${(html.length / 1024).toFixed(1)} KB)`);
 }

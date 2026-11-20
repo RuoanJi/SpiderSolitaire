@@ -274,13 +274,19 @@ export class App {
     for (let row = 0; row < 6; row++)
       for (let c = 0; c < COLUMNS; c++) if (t[c][row] !== undefined) delays.set(t[c][row], order++ * 16);
     requestAnimationFrame(() => this.render(true, delays));
-    if (this.settings.sounds) play('deal');
+    this.sfx('deal-all', 30);
   }
 
   // =========================================================== actions
 
-  private sfx(s: Sfx) {
-    if (this.settings.sounds) play(s);
+  private sfx(s: Sfx, delayMs = 0) {
+    if (this.settings.sounds) play(s, delayMs);
+  }
+
+  /** Sounds that follow an action: card flips and completed runs, timed to the animation. */
+  private actionSounds(res: ActionResult, completeAt: number) {
+    if (res.flipped.length) this.sfx('flip', 200);
+    res.completed.forEach((_, k) => this.sfx('complete', completeAt + k * 300));
   }
 
   private buzz(ms = 12) {
@@ -293,6 +299,7 @@ export class App {
     if (!res) return false;
     this.render(true, this.completionDelays(res, 160));
     this.sfx('drop');
+    this.actionSounds(res, 160);
     this.buzz();
     this.announce(`Moved ${cardName(id, this.game.rules.suits)} to column ${to + 1}.`);
     this.afterAction(res);
@@ -322,6 +329,7 @@ export class App {
     this.completionDelays(res, 500, delays);
     this.render(true, delays);
     this.sfx('deal');
+    this.actionSounds(res, 500);
     this.announce(`Dealt a new row. ${this.game.dealsLeft} deals left.`);
     this.afterAction(res);
   }
@@ -331,7 +339,7 @@ export class App {
     this.clearTransient();
     this.game.undo();
     this.render(true);
-    this.sfx('pick');
+    this.sfx('undo');
     this.announce('Undone.');
     this.afterAction(null);
   }
@@ -361,7 +369,6 @@ export class App {
     this.hintIdx = 0;
     this.clearHint();
     if (res?.completed.length) {
-      setTimeout(() => this.sfx('complete'), 300);
       const suit = suitOf(this.game.board.foundations[this.game.board.foundations.length - 1][0], this.game.rules.suits);
       this.announce(`Completed a run of ${SUIT_NAME[suit]}.`);
     }
@@ -423,7 +430,7 @@ export class App {
     const show = () => this.winDialog();
     if (this.settings.animations) {
       setTimeout(() => {
-        this.fw = fireworks(this.boardEl, 4500);
+        this.fw = fireworks(this.boardEl, 4500, () => this.sfx('pop'));
         let shown = false;
         const once = () => {
           if (shown) return;

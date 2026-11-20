@@ -25,7 +25,7 @@ export function showDialog(opts: DialogOptions): () => void {
   win.setAttribute('role', 'dialog');
   win.setAttribute('aria-modal', 'true');
   win.setAttribute('aria-label', opts.title);
-  win.innerHTML = `<div class="dlg-title"><span>${opts.title}</span><button class="dlg-x" aria-label="Close">✕</button></div><div class="dlg-body"></div><div class="dlg-buttons"></div>`;
+  win.innerHTML = `<div class="dlg-head"><h2>${opts.title}</h2><button class="dlg-x" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="dlg-body"></div><div class="dlg-buttons"></div>`;
   const body = win.querySelector('.dlg-body') as HTMLElement;
   if (typeof opts.body === 'string') body.innerHTML = opts.body;
   else body.appendChild(opts.body);
@@ -67,7 +67,11 @@ export function showDialog(opts: DialogOptions): () => void {
   };
 
   let primary: HTMLButtonElement | null = null;
-  for (const b of opts.buttons ?? [{ label: 'OK', primary: true }]) {
+  const list = (opts.buttons ?? [{ label: 'OK', primary: true }]).slice();
+  // Secondary actions on the left, the primary action last (right).
+  list.sort((a, b) => Number(!!a.primary) - Number(!!b.primary));
+  if (!list.length) btns.remove();
+  for (const b of list) {
     const el = document.createElement('button');
     el.className = `btn${b.primary ? ' primary' : ''}`;
     el.textContent = b.label;
@@ -86,6 +90,6 @@ export function showDialog(opts: DialogOptions): () => void {
   document.body.appendChild(overlay);
   openCount++;
   document.addEventListener('keydown', onKey, true);
-  (primary ?? (btns.querySelector('button') as HTMLElement | null))?.focus();
+  (primary ?? (win.querySelector('.dlg-buttons button, .dlg-body button, .dlg-x') as HTMLElement | null))?.focus();
   return close;
 }

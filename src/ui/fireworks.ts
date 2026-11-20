@@ -12,7 +12,7 @@ interface P {
 const COLORS = ['#ffd84a', '#ff5a5a', '#5ad1ff', '#7dff6a', '#ff8af0', '#ffffff', '#ffa53a'];
 
 /** Canvas fireworks over the board. Resolves when finished or stopped. */
-export function fireworks(host: HTMLElement, durationMs = 5000): { stop: () => void; done: Promise<void> } {
+export function fireworks(host: HTMLElement, durationMs = 5000, onBurst?: () => void): { stop: () => void; done: Promise<void> } {
   const canvas = document.createElement('canvas');
   canvas.className = 'fireworks';
   host.appendChild(canvas);
@@ -41,6 +41,7 @@ export function fireworks(host: HTMLElement, durationMs = 5000): { stop: () => v
     parts.push({ x, y: h, vx: (Math.random() - 0.5) * 2, vy: -(h / 70 + Math.random() * 3), life: 0, max: 60 + Math.random() * 15, color: '#fff', trail: true });
   };
   const burst = (x: number, y: number) => {
+    onBurst?.();
     const color = COLORS[Math.floor(Math.random() * COLORS.length)];
     const n = 50 + Math.floor(Math.random() * 30);
     for (let i = 0; i < n; i++) {
